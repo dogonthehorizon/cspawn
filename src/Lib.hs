@@ -5,11 +5,15 @@
 
 module Lib where
 
-import Data.Yaml
+import Control.Monad
+import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.Text    as T
 import qualified Data.Text.IO as T
+import Data.Yaml
 import GHC.Generics
 import Network.Nats
+import System.Exit
+import System.IO
 
 import Debug.Trace
 
@@ -51,12 +55,23 @@ launch fp = do
 
 launch' :: ServerConfig -> IO ()
 launch' conf = do
-    let nconf = natsConf conf
-    let addr  = "nats://" ++ (natsHost nconf) ++ ":" ++ (show $ natsPort nconf)
+    let addr  = buildAddr conf
     nats <- trace addr $ connect addr
-    sid <- subscribe nats "test" Nothing $ \_ _ msg _ -> putStrLn $ show msg
-    publish nats "test" "Tester"
+    sid  <- subscribe nats "test" Nothing $ \_ _ msg _ -> putStrLn $ show msg
+    loop nats
+  where
+    buildAddr :: ServerConfig -> String
+    buildAddr conf =
+        let nconf = natsConf conf
+        in  "nats://" ++ (natsHost nconf) ++ ":" ++ (show $ natsPort nconf)
 
-
-
+    loop :: Nats -> IO ()
+    loop nats = do
+        str <- getLine
+        if str == "exit" then
+            exitWith ExitSuccess
+        else do
+            -- Allow manual testing for now
+            publish nats "test" $ BL.pack str
+            loop nats
 
