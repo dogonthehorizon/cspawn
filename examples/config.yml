@@ -1,0 +1,4 @@
+---
+natsConf :
+    natsHost : "nats-main"
+    natsPort : 4222
