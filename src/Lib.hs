@@ -6,6 +6,7 @@
 module Lib where
 
 import Control.Monad
+import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.Text    as T
 import qualified Data.Text.IO as T
@@ -14,6 +15,8 @@ import GHC.Generics
 import Network.Nats
 import System.Exit
 import System.IO
+
+import Build
 
 import Debug.Trace
 
@@ -57,7 +60,7 @@ launch' :: ServerConfig -> IO ()
 launch' conf = do
     let addr  = buildAddr conf
     nats <- trace addr $ connect addr
-    sid  <- subscribe nats "test" Nothing $ \_ _ msg _ -> putStrLn $ show msg
+    sid  <- subscribe nats "build" Nothing $ \_ _ msg _ -> buildCb msg
     loop nats
   where
     buildAddr :: ServerConfig -> String
@@ -72,6 +75,12 @@ launch' conf = do
             exitWith ExitSuccess
         else do
             -- Allow manual testing for now
-            publish nats "test" $ BL.pack str
+            publish nats "build" $ BL.pack str
             loop nats
+
+
+buildCb :: BL.ByteString -> IO ()
+buildCb msg = case eitherDecode msg of
+    Left err   -> error $ show err -- FIXME: Remove this!
+    Right buildSpec -> runBuild buildSpec >> return () -- FIXME: What!!?? Why!?
 

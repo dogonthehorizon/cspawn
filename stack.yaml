@@ -5,4 +5,5 @@ packages:
 extra-deps:
 - nats-queue-0.1.2.0
 - dequeue-0.1.5
+- gitlib-cmdline-3.1.0.2
 resolver: lts-3.1
